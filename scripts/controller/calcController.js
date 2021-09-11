@@ -17,9 +17,17 @@ class CalcController {
 
         //Inserir dados
         //displayCalcEl.innerHTML = 2345;//insere o valor
-        this._dateEl.innerHTML = "05/09/2021";
-        this._timeEl.innerHTML = "23:19";
+        this._dateEl.innerHTML = "10/09/2021";
+        this._timeEl.innerHTML = "20:03";
 
+    }
+
+    get displayTime(){
+
+    }
+
+    get displayDate(){
+        
     }
 
     get displayCalc(){
@@ -31,7 +39,8 @@ class CalcController {
     }
 
     get currentDate(){
-        return this._currentDate;
+        //return this._currentDate;
+        return new Date();
     }
 
     set currentDate(valor){
