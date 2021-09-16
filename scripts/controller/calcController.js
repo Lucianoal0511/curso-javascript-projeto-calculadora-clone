@@ -1,5 +1,8 @@
 class CalcController {
     constructor(){
+
+        this._audio = new Audio('click.mp3');//Novo api de Audio
+        this._audioOnOff = false;//O audio inicia desligado
         this._lastOperator = '';
         this._lastNumber = '';
         this._operation = [];
@@ -11,6 +14,8 @@ class CalcController {
         this._currentDate;//Atributos Privados
         this.initialized();
         this.initButtonsEvents();
+        this.initKeyboard();
+
     }
 
     initialized(){
@@ -44,6 +49,46 @@ class CalcController {
 
         // }, 10000)
 
+        this.pasteFromClipboard();
+
+        //Adicionando duplo click no botão ac
+        document.querySelectorAll('.btn-ac').forEach(btn => {
+
+            btn.addEventListener('dblclick', e => {
+
+                this.toggleAudio();
+
+            });
+        });
+
+    }
+
+    toggleAudio(){
+        
+        //Primeira maneira
+        /*if (this._audioOnOff) {
+            this._audioOnOff = false;
+        } else {
+            this._audioOnOff = true;
+        }*/
+
+        //segunda maneira if ternário
+        //this._audioOnOff = (this._audioOnOff) ? false : true;
+        
+        //terceira maneira utilizando booleano
+        this._audioOnOff = !this._audioOnOff;
+
+    }
+
+    //Método para tocar o audio
+    playAudio(){
+
+        if (this._audioOnOff) {
+
+            this._audio.currentTime = 0;//Força o audio sempre tocar do início
+            this._audio.play();//executa o audio
+
+        }
     }
 
     //Iniciando o evento com os botões
@@ -68,6 +113,99 @@ class CalcController {
         })
 
     }
+
+    initKeyboard(){
+
+        document.addEventListener('keyup', e => {
+
+            //para ligar o botão de audio
+            this.playAudio();
+            
+            //console.log(e);
+            //console.log(e.key);
+
+            switch (e.key){
+
+                case 'Escape':
+                    this.clearAll();
+                    break;
+
+                case 'Backspace':
+                    this.cancelEnter();
+                    break;
+
+                case '+':
+                case '-':
+                case '*':
+                case '/':
+                case '%':
+                    this.addOperation(e.key);
+                    break;
+
+                case 'Enter':
+                case '=':
+                    this.calc();
+                    break;
+
+                case '.':
+                case ',':
+                    this.addDot();
+                    break;
+    
+                case '0':
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                case '8':
+                case '9':
+                    this.addOperation(parseInt(e.key));
+                    break;//O default foi retirado para não estourar o error na tela
+
+                //Ctrl + c
+                case 'c':
+                    if (e.ctrlKey) this.copyToClipboard();
+                    break;
+
+            }
+        })
+    }
+
+    //Criando a forma de copiar para a calculadora
+    copyToClipboard(){
+
+        let input = document.createElement('input');
+
+        input.value = this.displayCalc;
+
+        document.body.appendChild(input);//Para conseguir selecionar algo na tela
+
+        input.select();//Seleciona o input
+
+        document.execCommand('Copy');//Copia
+
+        input.remove();//Após copiar, removemos o input para não aparecer na tela
+
+    }
+
+    //Criando a forma de colar para a calculadora
+    pasteFromClipboard(){
+
+        document.addEventListener('paste', e => {
+
+            let text = e.clipboardData.getData('Text');
+
+            this.displayCalc = parseFloat(text);//Aqui ele vai pegar apenas números senão não irá funcionar
+
+            //console.log(text);
+
+        })
+
+    }
+
 
     //Criando método para vários eventos
     addEventListenerAll(element, events, fn){
@@ -109,8 +247,16 @@ class CalcController {
 
     //Método para o eval
     getResult(){
-        console.log('getResult', this._operation);
-        return eval(this._operation.join(''));
+
+        //console.log('getResult', this._operation);
+        try {
+            return eval(this._operation.join(''));
+        } catch(e) {
+            setTimeout(() => {//Colocamos a palavra error um milessegundos depois
+                this.setError();
+            }, 1);
+        }
+        
     }
 
     calc(){
@@ -225,7 +371,7 @@ class CalcController {
             } else {
 
                 let newValue = this.getLastOperation().toString() + value.toString();//Concatenando os números
-                this.setLastOperation(parseFloat(newValue));
+                this.setLastOperation(newValue);
                 //Atualizar Display
                 this.setLastNumberToDisplay();
 
@@ -240,6 +386,10 @@ class CalcController {
     //Tratando o Ponto (.)
     addDot(){
         let lastOperation = this.getLastOperation();
+
+        //Vai verificar se lastOperation é uma string e se nela possui um ponto
+        if (typeof lastOperation === 'string' && lastOperation.split('').indexOf('.') > -1) return;
+
         if (this.isOperator(lastOperation) || !lastOperation){
             this.pushOperation('0.')
         } else {
@@ -251,6 +401,9 @@ class CalcController {
 
     //Execução do botão
     execBtn(value){
+
+        //para ligar o botão de audio
+        this.playAudio();
 
         switch (value){
             case 'ac':
@@ -351,6 +504,13 @@ class CalcController {
     }
 
     set displayCalc(value){
+
+        //Limitando a quantidade de números no display
+        if (value.toString().length > 10) {//Transformando para string o value
+            this.setError();
+            return false;//Ficou false para não ira para a linha debaixo e executar
+        }
+
         this._displayCalcEl.innerHTML = value;
     }
 
